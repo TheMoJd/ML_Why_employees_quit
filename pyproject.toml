@@ -1,0 +1,19 @@
+[project]
+name = "hr-analytics-project"
+version = "0.1.0"
+description = "Analysis and prediction of employee turnover"
+requires-python = ">=3.9"
+dependencies = [
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "matplotlib>=3.7.0",
+    "seaborn>=0.12.0",
+    "scikit-learn>=1.3.0",
+    "imbalanced-learn>=0.11.0",
+    "scipy>=1.10.0",
+    "jupyterlab>=4.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
