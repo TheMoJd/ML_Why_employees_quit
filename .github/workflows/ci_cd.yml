@@ -1,0 +1,46 @@
+name: HR Analytics CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Récupération du code
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # 2. Installation de Python
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.9"
+
+    # 3. Installation des dépendances via pyproject.toml
+    # L'option ".[dev]" dit : installe le paquet courant (.) + les options "dev"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .[dev]
+
+    # 4. Linting (Qualité du code)
+    - name: Lint with flake8
+      run: |
+        flake8 src tests --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 src tests --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    # 5. Tests Automatiques
+    - name: Run Unit Tests
+      run: |
+        pytest tests/
+
+    # 6. (Optionnel) Entraînement
+    - name: Train Model
+      if: github.ref == 'refs/heads/main'
+      run: |
+        python src/train.pyd

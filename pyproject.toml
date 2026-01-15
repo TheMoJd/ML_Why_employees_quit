@@ -14,6 +14,13 @@ dependencies = [
     "jupyterlab>=4.0.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "flake8",
+    "joblib"  # Ajouté pour la sauvegarde du modèle
+]
+
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
