@@ -21,8 +21,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "pytest-cov",
     "flake8",
-    "joblib"  # Ajouté pour la sauvegarde du modèle
+    "joblib"
 ]
 
 [build-system]
