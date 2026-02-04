@@ -4,6 +4,8 @@
 -- Table des employés analysés
 CREATE TABLE IF NOT EXISTS employees (
     id SERIAL PRIMARY KEY,
+
+    -- Données SIRH
     age INTEGER NOT NULL CHECK (age >= 18 AND age <= 100),
     genre VARCHAR(1) NOT NULL CHECK (genre IN ('M', 'F')),
     revenu_mensuel FLOAT NOT NULL,
@@ -11,15 +13,34 @@ CREATE TABLE IF NOT EXISTS employees (
     departement VARCHAR(100) NOT NULL,
     poste VARCHAR(100) NOT NULL,
     nombre_experiences_precedentes INTEGER DEFAULT 0,
+    nombre_heures_travailless FLOAT DEFAULT 0,
     annee_experience_totale INTEGER DEFAULT 0,
     annees_dans_l_entreprise INTEGER DEFAULT 0,
     annees_dans_le_poste_actuel INTEGER DEFAULT 0,
+
+    -- Données Evaluation
     satisfaction_employee_environnement INTEGER CHECK (satisfaction_employee_environnement BETWEEN 1 AND 4),
+    note_evaluation_precedente INTEGER,
+    niveau_hierarchique_poste INTEGER,
     satisfaction_employee_nature_travail INTEGER CHECK (satisfaction_employee_nature_travail BETWEEN 1 AND 4),
     satisfaction_employee_equipe INTEGER CHECK (satisfaction_employee_equipe BETWEEN 1 AND 4),
     satisfaction_employee_equilibre_pro_perso INTEGER CHECK (satisfaction_employee_equilibre_pro_perso BETWEEN 1 AND 4),
+    note_evaluation_actuelle INTEGER,
     heure_supplementaires VARCHAR(3) CHECK (heure_supplementaires IN ('Oui', 'Non')),
+    augementation_salaire_precedente INTEGER DEFAULT 0,
+
+    -- Données Sondage
+    nombre_participation_pee INTEGER DEFAULT 0,
+    nb_formations_suivies INTEGER DEFAULT 0,
+    nombre_employee_sous_responsabilite INTEGER DEFAULT 0,
     distance_domicile_travail INTEGER DEFAULT 0,
+    niveau_education INTEGER,
+    domaine_etude VARCHAR(100),
+    ayant_enfants VARCHAR(1),
+    frequence_deplacement VARCHAR(50),
+    annees_depuis_la_derniere_promotion INTEGER DEFAULT 0,
+    annes_sous_responsable_actuel INTEGER DEFAULT 0,
+
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

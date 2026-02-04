@@ -70,7 +70,7 @@ def valid_employee_at_risk():
         "satisfaction_employee_nature_travail": 1,
         "satisfaction_employee_equipe": 2,
         "satisfaction_employee_equilibre_pro_perso": 1,
-        "note_evaluation_actuelle": 2,
+        "note_evaluation_actuelle": 2,          
         "heure_supplementaires": "Oui",
         "augementation_salaire_precedente": 0,
         "nombre_participation_pee": 0,
