@@ -96,7 +96,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: trained-model
-        path: models/
+        path: model_hr.pkl
 
   # ===========================================
   # JOB 3: Déploiement (production)
@@ -115,14 +115,14 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: trained-model
-        path: models/
+        path: .
 
     # Placeholder pour le déploiement réel
     # Décommentez et adaptez selon votre plateforme (Heroku, AWS, Azure, etc.)
     - name: Deploy to Production
       run: |
         echo "🚀 Déploiement en production..."
-        echo "Model version: $(cat models/version.txt 2>/dev/null || echo '1.0.0')"
+        echo "Model file: $(ls -la model_hr.pkl 2>/dev/null || echo 'Not found')"
         # Exemples de déploiement:
         # - Heroku: heroku container:push web --app ${{ secrets.HEROKU_APP_NAME }}
         # - AWS: aws ecs update-service --cluster my-cluster --service my-service
