@@ -186,11 +186,76 @@ Le rapport HTML est généré dans `htmlcov/`.
 
 ---
 
-## 🔒 Sécurité
+## 🔒 Sécurité et Authentification
 
-- Les secrets sont stockés dans `.env` (non versionné)
-- CORS configuré pour contrôler les origines autorisées
-- Validation des données avec Pydantic
+### Gestion des secrets
+
+| Fichier | Description | Versionné |
+|---------|-------------|-----------|
+| `.env` | Variables d'environnement réelles | ❌ Non (dans .gitignore) |
+| `.env.example` | Template sans valeurs sensibles | ✅ Oui |
+
+**Variables sensibles à configurer :**
+```bash
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+POSTGRES_PASSWORD=your_secure_password
+SECRET_KEY=your_secret_key  # Pour JWT (si implémenté)
+```
+
+### Mesures de sécurité implémentées
+
+1. **Validation des entrées** : Pydantic valide toutes les données entrantes
+   - Types stricts (int, float, str)
+   - Contraintes de valeurs (age >= 18, genre in ['M', 'F'])
+   - Énumérations pour les champs à valeurs fixes
+
+2. **Protection CORS** : Configuré dans `main.py`
+   ```python
+   # Production : remplacer "*" par les domaines autorisés
+   allow_origins=["https://yourdomain.com"]
+   ```
+
+3. **Base de données sécurisée**
+   - Contraintes CHECK au niveau SQL
+   - Requêtes paramétrées via SQLAlchemy (protection injection SQL)
+   - Utilisateur PostgreSQL dédié avec permissions limitées
+
+4. **Gestion des erreurs**
+   - Messages d'erreur génériques en production
+   - Pas d'exposition des stack traces
+
+### Authentification (Recommandations pour la production)
+
+L'API actuelle est un POC sans authentification. Pour la production, implémenter :
+
+```python
+# Exemple avec JWT (à ajouter dans src/api/auth.py)
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    # Valider le token JWT
+    # Retourner l'utilisateur ou lever une exception
+    pass
+```
+
+**Options d'authentification recommandées :**
+- **JWT** : Pour les APIs stateless
+- **OAuth2** : Pour l'intégration avec des providers externes
+- **API Key** : Pour les intégrations machine-to-machine
+
+### Secrets GitHub Actions (CI/CD)
+
+Configurer dans : `Settings > Secrets and variables > Actions`
+
+| Secret | Description |
+|--------|-------------|
+| `DATABASE_URL` | URL de connexion PostgreSQL |
+| `POSTGRES_USER` | Utilisateur BDD |
+| `POSTGRES_PASSWORD` | Mot de passe BDD |
+| `POSTGRES_DB` | Nom de la base |
 
 ---
 
