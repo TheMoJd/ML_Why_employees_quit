@@ -2,7 +2,8 @@
 Router FastAPI pour les endpoints de prédiction.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
 
 from .schemas import (
     EmployeeInput,
@@ -11,6 +12,8 @@ from .schemas import (
     BatchPredictionResponse
 )
 from .model_loader import predict_single, predict_batch
+from ..database.connection import get_db
+from ..database import crud
 
 
 router = APIRouter(prefix="/predict", tags=["Predictions"])
@@ -25,23 +28,36 @@ def get_label(prediction: int) -> str:
     "",
     response_model=PredictionResponse,
     summary="Prédiction pour un employé",
-    description="Prédit si un employé risque de quitter l'entreprise"
+    description="Prédit si un employé risque de quitter l'entreprise et sauvegarde le résultat."
 )
-async def predict_employee(employee: EmployeeInput) -> PredictionResponse:
+async def predict_employee(
+    employee: EmployeeInput,
+    db: Session = Depends(get_db)
+) -> PredictionResponse:
     """
     Effectue une prédiction de turnover pour un employé.
     
-    - **prediction**: 0 = l'employé reste, 1 = l'employé risque de partir
-    - **probability**: Probabilité de départ (0.0 à 1.0)
-    - **label**: Interprétation textuelle du résultat
+    Sauvegarde automatiquement l'employé et le résultat en base de données.
     """
     try:
-        prediction, probability = predict_single(employee.model_dump())
+        # Prédiction
+        inputs = employee.model_dump()
+        prediction, probability = predict_single(inputs)
+        label = get_label(prediction)
+        
+        # Sauvegarde en BDD
+        crud.create_employee_with_prediction(
+            db=db,
+            employee_data=inputs,
+            prediction=prediction,
+            probability=probability,
+            label=label
+        )
         
         return PredictionResponse(
             prediction=prediction,
             probability=probability,
-            label=get_label(prediction)
+            label=label
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur de prédiction: {str(e)}")
@@ -51,26 +67,36 @@ async def predict_employee(employee: EmployeeInput) -> PredictionResponse:
     "/batch",
     response_model=BatchPredictionResponse,
     summary="Prédictions multiples",
-    description="Prédit le turnover pour plusieurs employés en une seule requête"
+    description="Prédit le turnover pour plusieurs employés et sauvegarde les résultats."
 )
-async def predict_batch_employees(request: BatchPredictionRequest) -> BatchPredictionResponse:
-    """
-    Effectue des prédictions pour plusieurs employés.
-    
-    Utile pour analyser un département ou une équipe entière.
-    """
+async def predict_batch_employees(
+    request: BatchPredictionRequest,
+    db: Session = Depends(get_db)
+) -> BatchPredictionResponse:
     try:
-        inputs = [emp.model_dump() for emp in request.employees]
-        results = predict_batch(inputs)
+        employees_data = [emp.model_dump() for emp in request.employees]
+        results = predict_batch(employees_data)
         
-        predictions = [
-            PredictionResponse(
+        predictions = []
+        for i, (pred, prob) in enumerate(results):
+            label = get_label(pred)
+            
+            # Sauvegarde en BDD
+            crud.create_employee_with_prediction(
+                db=db,
+                employee_data=employees_data[i],
                 prediction=pred,
                 probability=prob,
-                label=get_label(pred)
+                label=label
             )
-            for pred, prob in results
-        ]
+            
+            predictions.append(
+                PredictionResponse(
+                    prediction=pred,
+                    probability=prob,
+                    label=label
+                )
+            )
         
         return BatchPredictionResponse(
             predictions=predictions,

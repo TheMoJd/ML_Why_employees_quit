@@ -3,7 +3,7 @@ Configuration de la connexion à la base de données PostgreSQL.
 """
 
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
@@ -14,7 +14,7 @@ load_dotenv()
 # URL de connexion à PostgreSQL
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://hr_admin:hr_password_2024@localhost:5432/hr_analytics"
+    "postgresql://hr_admin:hr_password_2024@127.0.0.1:5432/hr_analytics"
 )
 
 # Création du moteur SQLAlchemy
@@ -43,7 +43,7 @@ def test_connection():
     """Teste la connexion à la base de données."""
     try:
         with engine.connect() as conn:
-            conn.execute("SELECT 1")
+            conn.execute(text("SELECT 1"))
         return True
     except Exception as e:
         print(f"Erreur de connexion: {e}")
