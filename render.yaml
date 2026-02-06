@@ -1,0 +1,23 @@
+services:
+  # API FastAPI
+  - type: web
+    name: hr-analytics-api
+    runtime: python
+    plan: free
+    buildCommand: "pip install -e . && python src/train.py"
+    startCommand: "uvicorn src.api.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hr-analytics-db
+          property: connectionString
+      - key: PYTHON_VERSION
+        value: "3.9"
+    healthCheckPath: /health
+
+databases:
+  # PostgreSQL
+  - name: hr-analytics-db
+    databaseName: hr_analytics
+    user: hr_admin
+    plan: free

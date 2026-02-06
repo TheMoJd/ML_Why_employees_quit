@@ -1,0 +1,34 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Tests
+.pytest_cache/
+htmlcov/
+.coverage
+
+# IDE
+.vscode/
+.idea/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Data (si volumineux)
+# data/
+
+# Environnement local
+.env
+docker-compose.yml
