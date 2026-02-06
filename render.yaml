@@ -11,8 +11,6 @@ services:
         fromDatabase:
           name: hr-analytics-db
           property: connectionString
-      - key: PYTHON_VERSION
-        value: "3.9"
     healthCheckPath: /health
 
 databases:
