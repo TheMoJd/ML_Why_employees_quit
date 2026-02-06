@@ -18,7 +18,9 @@ def process_and_merge(df_sirh, df_eval, df_sondage):
     """Nettoie les clés et fusionne les dataframes."""
     # 1. SIRH
     df_sirh = df_sirh.rename(columns={'id_employee': 'id'})
-    
+    # Conversion explicite en int pour éviter les erreurs de type lors du merge
+    df_sirh['id'] = pd.to_numeric(df_sirh['id'], errors='coerce').astype('Int64')
+
     # 2. Eval
     df_eval = df_eval.copy()
     df_eval['id'] = clean_eval_id(df_eval['eval_number'])
