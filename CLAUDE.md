@@ -44,6 +44,10 @@ Project4/
 │   └── ci_cd.yml            # Pipeline CI/CD
 ├── model_hr.pkl             # Modèle ML entraîné (ignoré par git)
 ├── docker-compose.yml       # PostgreSQL container
+├── Dockerfile               # Image Docker pour déploiement
+├── .dockerignore            # Exclusions Docker build
+├── render.yaml              # Blueprint Render.com (déploiement)
+├── runtime.txt              # Version Python pour Render (3.9.18)
 ├── pyproject.toml           # Config projet + dépendances
 └── .env                     # Variables d'environnement (ignoré)
 ```
@@ -68,6 +72,12 @@ Le projet utilise plusieurs patterns établis pour maintenir la cohérence et la
 - **Type Safety**: Annotations de types Python 3.9+ partout
   - Pydantic pour la validation runtime
   - mypy pour la vérification statique (optionnelle)
+
+- **Conversion de Types pour Merge**: Les 3 CSV sources ont des formats d'ID différents
+  - SIRH: `id_employee` (peut être str ou int selon la version de pandas)
+  - EVAL: `eval_number` format `E_1` → converti en int via `clean_eval_id()`
+  - SONDAGE: `code_sondage` → converti en Int64 via `pd.to_numeric()`
+  - Tous les IDs sont normalisés en Int64 avant le merge dans [data_processing.py](src/data_processing.py)
 
 ## Endpoints API
 
@@ -309,6 +319,30 @@ Configurer dans `Settings > Secrets and variables > Actions`:
 - Fixtures: `valid_employee_stable`, `valid_employee_at_risk`
 - Configuration dans [conftest.py](tests/conftest.py)
 
+## Déploiement (Render.com)
+
+### Configuration
+
+- **Blueprint**: [render.yaml](render.yaml) définit le service web + base PostgreSQL
+- **Python Version**: Spécifiée dans [runtime.txt](runtime.txt) (`python-3.9.18`)
+- **Build**: `pip install -e . && python src/train.py` (installe les dépendances et entraîne le modèle)
+- **Start**: `uvicorn src.api.main:app --host 0.0.0.0 --port $PORT`
+
+### Architecture Render
+
+```
+┌─────────────────────┐     ┌─────────────────────┐
+│  hr-analytics-api   │────▶│  hr-analytics-db    │
+│  (Web Service)      │     │  (PostgreSQL)       │
+│  Python 3.9.18      │     │  Plan: Free         │
+│  Plan: Free         │     └─────────────────────┘
+└─────────────────────┘
+```
+
+### Alternative Docker
+
+Un [Dockerfile](Dockerfile) est aussi disponible pour un déploiement conteneurisé sur n'importe quelle plateforme.
+
 ## Améliorations Futures
 
 Roadmap des fonctionnalités planifiées pour la production:
@@ -319,7 +353,7 @@ Roadmap des fonctionnalités planifiées pour la production:
 - **HTTPS**: Déploiement avec certificats SSL/TLS
 
 ### Infrastructure
-- **Docker Complet**: Dockerfile pour l'API (actuellement seul PostgreSQL est conteneurisé)
+- **Docker Multi-Service**: Docker Compose pour API + PostgreSQL ensemble
 - **Cloud Deployment**: AWS ECS, Azure App Service, ou GCP Cloud Run
 - **Load Balancing**: Distribution de charge pour haute disponibilité
 

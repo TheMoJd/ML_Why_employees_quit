@@ -10,7 +10,7 @@ def load_data(path_sirh, path_eval, path_sondage):
 
 def clean_eval_id(series):
     """Transforme 'E_1' en 1."""
-    if series.dtype == 'object':
+    if pd.api.types.is_string_dtype(series):
         return series.str.replace('E_', '').astype(int)
     return series
 
@@ -24,7 +24,8 @@ def process_and_merge(df_sirh, df_eval, df_sondage):
     # 2. Eval
     df_eval = df_eval.copy()
     df_eval['id'] = clean_eval_id(df_eval['eval_number'])
-    
+    df_eval['id'] = pd.to_numeric(df_eval['id'], errors='coerce').astype('Int64')
+
     # 3. Sondage
     df_sondage = df_sondage.rename(columns={'code_sondage': 'id'})
     # Conversion sécurisée en int
@@ -57,7 +58,7 @@ def prepare_features(df):
             df_proc[col] = df_proc[col].astype('category').cat.codes
             
     # One Hot Encoding pour les autres catégorielles
-    cat_cols = df_proc.select_dtypes(include=['object']).columns.tolist()
+    cat_cols = df_proc.select_dtypes(include=['object', 'string']).columns.tolist()
     # On retire les cols à drop de la liste des cat_cols si elles y sont
     cat_cols = [c for c in cat_cols if c not in cols_to_drop]
     
