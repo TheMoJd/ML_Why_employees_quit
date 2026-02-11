@@ -3,16 +3,31 @@ Point d'entrée principal de l'API FastAPI.
 Déploie le modèle de prédiction du turnover employé.
 """
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .schemas import HealthResponse
 from .router import router as prediction_router
 from .model_loader import is_model_loaded
+from ..database.connection import engine, Base
+from ..database.models import Employee, Prediction  # noqa: F401
+
+
+@asynccontextmanager
+async def lifespan(app):
+    """Crée les tables automatiquement si elles n'existent pas."""
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception:
+        pass
+    yield
 
 
 # Métadonnées de l'API pour Swagger
 app = FastAPI(
+    lifespan=lifespan,
     title="HR Turnover Prediction API",
     description="""
 API de prédiction du turnover des employés.
