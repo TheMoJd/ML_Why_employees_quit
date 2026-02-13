@@ -118,3 +118,32 @@ class HealthResponse(BaseModel):
     status: str
     model_loaded: bool
     version: str
+
+
+# ==================== AUTH ====================
+
+class UserCreate(BaseModel):
+    """Données pour créer un utilisateur."""
+    username: str = Field(
+        ..., min_length=3, max_length=50, description="Nom d'utilisateur"
+    )
+    email: str = Field(..., description="Adresse email")
+    password: str = Field(
+        ..., min_length=6, description="Mot de passe (min 6 caractères)"
+    )
+
+
+class UserResponse(BaseModel):
+    """Réponse utilisateur (sans mot de passe)."""
+    id: int
+    username: str
+    email: str
+    is_active: bool
+
+    model_config = {"from_attributes": True}
+
+
+class Token(BaseModel):
+    """Réponse de token JWT."""
+    access_token: str
+    token_type: str = "bearer"

@@ -5,7 +5,7 @@ Opérations CRUD pour la base de données HR Analytics.
 from typing import List, Optional
 from sqlalchemy.orm import Session
 
-from .models import Employee, Prediction
+from .models import Employee, Prediction, User
 
 
 # ==================== EMPLOYEES ====================
@@ -120,3 +120,30 @@ def get_statistics(db: Session) -> dict:
         "stable": stable,
         "risk_ratio": at_risk / total if total > 0 else 0
     }
+
+
+# ==================== USERS ====================
+
+def create_user(
+    db: Session, username: str, email: str, hashed_password: str
+) -> User:
+    """Crée un nouvel utilisateur."""
+    db_user = User(
+        username=username,
+        email=email,
+        hashed_password=hashed_password,
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+def get_user_by_username(db: Session, username: str) -> Optional[User]:
+    """Récupère un utilisateur par son nom."""
+    return db.query(User).filter(User.username == username).first()
+
+
+def get_user_by_email(db: Session, email: str) -> Optional[User]:
+    """Récupère un utilisateur par son email."""
+    return db.query(User).filter(User.email == email).first()

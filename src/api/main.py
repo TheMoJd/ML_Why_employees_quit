@@ -13,9 +13,10 @@ from fastapi.responses import FileResponse
 
 from .schemas import HealthResponse
 from .router import router as prediction_router
+from .auth_router import router as auth_router
 from .model_loader import is_model_loaded
 from ..database.connection import engine, Base
-from ..database.models import Employee, Prediction  # noqa: F401
+from ..database.models import Employee, Prediction, User  # noqa: F401
 
 # Chemin vers le dossier static
 STATIC_DIR = Path(__file__).parent.parent.parent / "static"
@@ -68,7 +69,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Montage du router de prédictions
+# Montage des routers
+app.include_router(auth_router)
 app.include_router(prediction_router)
 
 

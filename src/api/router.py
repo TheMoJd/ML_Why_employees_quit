@@ -12,6 +12,7 @@ from .schemas import (
     BatchPredictionResponse
 )
 from .model_loader import predict_single, predict_batch
+from .auth import get_current_user
 from ..database.connection import get_db
 from ..database import crud
 
@@ -32,7 +33,8 @@ def get_label(prediction: int) -> str:
 )
 async def predict_employee(
     employee: EmployeeInput,
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> PredictionResponse:
     """
     Effectue une prédiction de turnover pour un employé.
@@ -71,7 +73,8 @@ async def predict_employee(
 )
 async def predict_batch_employees(
     request: BatchPredictionRequest,
-    db: Session = Depends(get_db)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> BatchPredictionResponse:
     try:
         employees_data = [emp.model_dump() for emp in request.employees]

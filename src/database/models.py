@@ -3,10 +3,26 @@ Modèles SQLAlchemy pour la base de données HR Analytics.
 """
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey, CheckConstraint
+from sqlalchemy import (
+    Column, Integer, Float, String, Boolean,
+    DateTime, ForeignKey, CheckConstraint,
+)
 from sqlalchemy.orm import relationship
 
 from .connection import Base
+
+
+class User(Base):
+    """Modèle pour les utilisateurs authentifiés."""
+
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, nullable=False, index=True)
+    email = Column(String(100), unique=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class Employee(Base):

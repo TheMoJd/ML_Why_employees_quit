@@ -53,3 +53,34 @@ def db_session():
     finally:
         db.rollback()
         db.close()
+
+
+@pytest.fixture
+def auth_headers():
+    """Crée un utilisateur de test et retourne les headers Authorization."""
+    from fastapi.testclient import TestClient
+    from src.database import crud
+    from src.api.auth import get_password_hash
+
+    db = TestingSessionLocal()
+    try:
+        # Créer un user de test s'il n'existe pas
+        user = crud.get_user_by_username(db, "testuser")
+        if not user:
+            crud.create_user(
+                db,
+                username="testuser",
+                email="test@example.com",
+                hashed_password=get_password_hash("testpassword"),
+            )
+    finally:
+        db.close()
+
+    # Login pour obtenir le token
+    client = TestClient(app)
+    response = client.post(
+        "/auth/token",
+        data={"username": "testuser", "password": "testpassword"},
+    )
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}

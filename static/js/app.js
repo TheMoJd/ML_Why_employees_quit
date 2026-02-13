@@ -8,6 +8,9 @@
     const API = {
         health: '/health',
         predict: '/predict',
+        login: '/auth/token',
+        register: '/auth/register',
+        me: '/auth/me',
     };
 
     /* ---------- FIELD DEFINITIONS ---------- */
@@ -55,6 +58,7 @@
     /* ---------- STATE ---------- */
     let currentStep = 0;
     const totalSteps = 4;
+    let authToken = localStorage.getItem('hr-token') || null;
 
     /* ---------- DOM REFS ---------- */
     const $ = (sel) => document.querySelector(sel);
@@ -81,6 +85,17 @@
         resultLabel: $('#result-label'),
         resultInterp: $('#result-interpretation'),
         reviewSummary: $('#review-summary'),
+        authOverlay: $('#auth-overlay'),
+        authTitle: $('#auth-title'),
+        authSubtitle: $('#auth-subtitle'),
+        authError: $('#auth-error'),
+        loginForm: $('#login-form'),
+        registerForm: $('#register-form'),
+        authSwitchText: $('#auth-switch-text'),
+        authSwitchBtn: $('#auth-switch-btn'),
+        userInfo: $('#user-info'),
+        userName: $('#user-name'),
+        btnLogout: $('#btn-logout'),
     };
 
     /* ---------- THEME ---------- */
@@ -333,6 +348,11 @@
 
     /* ---------- API CALL ---------- */
     async function submitPrediction() {
+        if (!authToken) {
+            showAuthModal();
+            return;
+        }
+
         const data = collectFormData();
 
         dom.loadingOverlay.classList.remove('hidden');
@@ -340,9 +360,18 @@
         try {
             const res = await fetch(API.predict, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + authToken,
+                },
                 body: JSON.stringify(data),
             });
+
+            if (res.status === 401) {
+                setLoggedOut();
+                showAuthModal();
+                throw new Error('Session expiree, veuillez vous reconnecter.');
+            }
 
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
@@ -482,14 +511,172 @@
         dom.gaugeValue.textContent = '0%';
     }
 
+    /* ---------- AUTH ---------- */
+    function showAuthError(msg) {
+        dom.authError.textContent = msg;
+        dom.authError.classList.remove('hidden');
+    }
+
+    function hideAuthError() {
+        dom.authError.classList.add('hidden');
+    }
+
+    function showLoginMode() {
+        dom.authTitle.textContent = 'Connexion';
+        dom.authSubtitle.textContent = 'Connectez-vous pour acceder aux analyses';
+        dom.loginForm.classList.remove('hidden');
+        dom.registerForm.classList.add('hidden');
+        dom.authSwitchText.textContent = 'Pas encore de compte ?';
+        dom.authSwitchBtn.textContent = 'Creer un compte';
+        hideAuthError();
+    }
+
+    function showRegisterMode() {
+        dom.authTitle.textContent = 'Creer un compte';
+        dom.authSubtitle.textContent = 'Inscrivez-vous pour commencer les analyses';
+        dom.loginForm.classList.add('hidden');
+        dom.registerForm.classList.remove('hidden');
+        dom.authSwitchText.textContent = 'Deja un compte ?';
+        dom.authSwitchBtn.textContent = 'Se connecter';
+        hideAuthError();
+    }
+
+    function showAuthModal() {
+        showLoginMode();
+        dom.authOverlay.classList.remove('hidden');
+    }
+
+    function hideAuthModal() {
+        dom.authOverlay.classList.add('hidden');
+    }
+
+    function setLoggedIn(token, username) {
+        authToken = token;
+        localStorage.setItem('hr-token', token);
+        dom.userName.textContent = username;
+        dom.userInfo.classList.remove('hidden');
+        hideAuthModal();
+    }
+
+    function setLoggedOut() {
+        authToken = null;
+        localStorage.removeItem('hr-token');
+        dom.userInfo.classList.add('hidden');
+        dom.userName.textContent = '';
+        showHero();
+    }
+
+    async function checkToken() {
+        if (!authToken) return false;
+        try {
+            var res = await fetch(API.me, {
+                headers: { 'Authorization': 'Bearer ' + authToken },
+            });
+            if (!res.ok) throw new Error();
+            var user = await res.json();
+            dom.userName.textContent = user.username;
+            dom.userInfo.classList.remove('hidden');
+            return true;
+        } catch {
+            setLoggedOut();
+            return false;
+        }
+    }
+
+    async function handleLogin(e) {
+        e.preventDefault();
+        hideAuthError();
+        var username = document.getElementById('login-username').value.trim();
+        var password = document.getElementById('login-password').value;
+        if (!username || !password) {
+            showAuthError('Veuillez remplir tous les champs.');
+            return;
+        }
+        try {
+            var body = new URLSearchParams();
+            body.append('username', username);
+            body.append('password', password);
+            var res = await fetch(API.login, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body,
+            });
+            if (!res.ok) {
+                var err = await res.json().catch(function () { return {}; });
+                throw new Error(err.detail || 'Identifiants incorrects');
+            }
+            var data = await res.json();
+            setLoggedIn(data.access_token, username);
+        } catch (ex) {
+            showAuthError(ex.message);
+        }
+    }
+
+    async function handleRegister(e) {
+        e.preventDefault();
+        hideAuthError();
+        var username = document.getElementById('register-username').value.trim();
+        var email = document.getElementById('register-email').value.trim();
+        var password = document.getElementById('register-password').value;
+        if (!username || !email || !password) {
+            showAuthError('Veuillez remplir tous les champs.');
+            return;
+        }
+        try {
+            var res = await fetch(API.register, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: username, email: email, password: password }),
+            });
+            if (!res.ok) {
+                var err = await res.json().catch(function () { return {}; });
+                throw new Error(err.detail || 'Erreur lors de l\'inscription');
+            }
+            // Auto-login after register
+            var loginBody = new URLSearchParams();
+            loginBody.append('username', username);
+            loginBody.append('password', password);
+            var loginRes = await fetch(API.login, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: loginBody,
+            });
+            var loginData = await loginRes.json();
+            setLoggedIn(loginData.access_token, username);
+        } catch (ex) {
+            showAuthError(ex.message);
+        }
+    }
+
     /* ---------- INIT ---------- */
     function init() {
         initTheme();
         checkHealth();
         renderAllFields();
 
-        // Hero → Form
-        dom.startBtn.addEventListener('click', showForm);
+        // Check existing token
+        checkToken();
+
+        // Hero → Form (requires auth)
+        dom.startBtn.addEventListener('click', function () {
+            if (!authToken) {
+                showAuthModal();
+            } else {
+                showForm();
+            }
+        });
+
+        // Auth events
+        dom.loginForm.addEventListener('submit', handleLogin);
+        dom.registerForm.addEventListener('submit', handleRegister);
+        dom.authSwitchBtn.addEventListener('click', function () {
+            if (dom.loginForm.classList.contains('hidden')) {
+                showLoginMode();
+            } else {
+                showRegisterMode();
+            }
+        });
+        dom.btnLogout.addEventListener('click', setLoggedOut);
 
         // Stepper navigation
         dom.btnPrev.addEventListener('click', () => goToStep(currentStep - 1));
