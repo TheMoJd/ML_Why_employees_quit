@@ -13,6 +13,7 @@ WORKDIR /app
 COPY pyproject.toml ./
 COPY src ./src
 COPY data ./data
+COPY static ./static
 
 # Installer les dépendances
 RUN pip install --upgrade pip && \

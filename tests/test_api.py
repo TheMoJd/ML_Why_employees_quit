@@ -107,17 +107,18 @@ class TestHealthEndpoint:
 
 class TestRootEndpoint:
     """Tests pour l'endpoint racine."""
-    
+
     def test_root_returns_200(self):
         """Vérifie que / retourne un status 200."""
         response = client.get("/")
         assert response.status_code == 200
-    
-    def test_root_contains_docs_link(self):
-        """Vérifie que la racine contient le lien vers docs."""
-        response = client.get("/")
+
+    def test_api_info_contains_docs_link(self):
+        """Vérifie que /api/info contient le lien vers docs."""
+        response = client.get("/api/info")
         data = response.json()
         assert "docs" in data
+        assert "version" in data
 
 
 class TestPredictEndpoint:
